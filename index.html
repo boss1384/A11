@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sahara Flash Score</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0b1220;
+  color:white;
+}
+
+.header{
+  padding:15px;
+  background:#111827;
+  font-weight:bold;
+}
+
+.tabs{
+  display:flex;
+  gap:8px;
+  padding:10px;
+  overflow-x:auto;
+}
+
+.tab{
+  background:#111827;
+  border:1px solid #1f2937;
+  color:white;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.card{
+  background:#111827;
+  margin:10px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #1f2937;
+}
+
+button{
+  background:#111827;
+  color:white;
+  border:1px solid #1f2937;
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">⚽ SAHARA FLASH SCORE</div>
+
+<div class="tabs">
+  <button class="tab" onclick="loadMatches()">All Matches</button>
+  <button class="tab" onclick="showTable()">League Table</button>
+</div>
+
+<div id="content">Loading...</div>
+
+<script>
+
+let STATE = { matches: [] };
+
+/* TEAM LOGO */
+function logo(id){
+  return `https://crests.football-data.org/${id}.png`;
+}
+
+/* LOAD MATCHES (API + FALLBACK) */
+async function loadMatches(){
+
+  document.getElementById("content").innerHTML =
+  "<div class='card'>Loading matches...</div>";
+
+  try{
+
+    let res = await fetch("/api/matches");
+    let data = await res.json();
+
+    STATE.matches = data.matches || demoMatches();
+
+    render();
+
+  }catch(e){
+
+    STATE.matches = demoMatches();
+    render();
+
+  }
+
+}
+
+/* DEMO DATA (SAFE FALLBACK) */
+function demoMatches(){
+
+  const teams = [
+    {id:57,name:"Arsenal"},
+    {id:61,name:"Chelsea"},
+    {id:64,name:"Liverpool"},
+    {id:66,name:"Man United"},
+    {id:81,name:"Barcelona"},
+    {id:86,name:"Real Madrid"},
+    {id:524,name:"PSG"}
+  ];
+
+  let arr = [];
+
+  for(let i=0;i<20;i++){
+
+    let h = teams[Math.floor(Math.random()*teams.length)];
+    let a = teams[Math.floor(Math.random()*teams.length)];
+
+    arr.push({
+      id:i,
+      competition:"Sahara League",
+      status:"LIVE",
+      minute:Math.floor(Math.random()*90),
+      homeTeam:h,
+      awayTeam:a,
+      score:{
+        home:Math.floor(Math.random()*4),
+        away:Math.floor(Math.random()*4)
+      }
+    });
+
+  }
+
+  return arr;
+}
+
+/* RENDER MATCHES */
+function render(){
+
+  let html = "<h2>⚽ Live Matches</h2>";
+
+  STATE.matches.forEach((m,i)=>{
+
+    html += `
+    <div class="card" onclick="openMatch(${i})">
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+
+        <div style="text-align:center">
+          <img src="${logo(m.homeTeam.id)}" width="40"><br>
+          ${m.homeTeam.name}
+        </div>
+
+        <h2>${m.score.home} - ${m.score.away}</h2>
+
+        <div style="text-align:center">
+          <img src="${logo(m.awayTeam.id)}" width="40"><br>
+          ${m.awayTeam.name}
+        </div>
+
+      </div>
+
+      <small>${m.competition} • ${m.minute}'</small>
+
+    </div>
+    `;
+  });
+
+  document.getElementById("content").innerHTML = html;
+
+}
+
+/* MATCH DETAILS */
+function openMatch(i){
+
+  let m = STATE.matches[i];
+
+  document.getElementById("content").innerHTML = `
+    <div class="card">
+      <h2>${m.homeTeam.name} vs ${m.awayTeam.name}</h2>
+      <h1>${m.score.home} - ${m.score.away}</h1>
+      <p>${m.competition}</p>
+      <p>${m.status} • ${m.minute}'</p>
+    </div>
+
+    <button onclick="loadMatches()">⬅ Back</button>
+  `;
+}
+
+/* TABLE */
+function showTable(){
+
+  let table = {};
+
+  STATE.matches.forEach(m=>{
+
+    if(!table[m.homeTeam.name]) table[m.homeTeam.name]={pts:0};
+    if(!table[m.awayTeam.name]) table[m.awayTeam.name]={pts:0};
+
+    if(m.score.home > m.score.away){
+      table[m.homeTeam.name].pts += 3;
+    }else if(m.score.away > m.score.home){
+      table[m.awayTeam.name].pts += 3;
+    }else{
+      table[m.homeTeam.name].pts += 1;
+      table[m.awayTeam.name].pts += 1;
+    }
+
+  });
+
+  let html = "<h2>📊 League Table</h2>";
+
+  Object.keys(table).forEach(team=>{
+    html += `<div class="card">${team} - ${table[team].pts} pts</div>`;
+  });
+
+  document.getElementById("content").innerHTML = html;
+
+}
+
+/* START APP */
+loadMatches();
+
+</script>
+
+</body>
+  </html>
